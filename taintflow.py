@@ -3,14 +3,37 @@ Values carry labels: "trusted-owner" or "untrusted:<source>". Labels propagate t
 Plan: {"values": {id: {"text", "labels"} | {"op", "args": [{"ref"}], "params"}}, "calls": [{"tool", "args": {name: {"ref"}}}]}.
 Policy: {"tools": {tool: {"sensitive": {arg: {"allow": [label], "ask": [label]}}, "free": [arg]}}}.
 Verdict ALLOW, ASK_OWNER or BLOCK. Fail closed: any doubt, any error is BLOCK."""
-import json, sys
+import json, string, sys
 
 TRUSTED = "trusted-owner"
+MAX_TEXT = 65536  # longest value text, in characters; a longer one is BLOCK
+TEMPLATE = "untrusted:format_template"  # literal text in a format template is not owner-typed
 RANK = {"ALLOW": 0, "ASK_OWNER": 1, "BLOCK": 2}
 
 
 class Bad(Exception):
     pass
+
+
+def _pairs(pairs):
+    d = {}
+    for k, v in pairs:
+        if k in d:
+            raise Bad(f"duplicate key {k!r}")
+        d[k] = v
+    return d
+
+
+def _loads(text, what):
+    try:
+        return json.loads(text, object_pairs_hook=_pairs)
+    except ValueError:
+        raise Bad(f"{what} is not valid JSON")
+
+
+def _keys(d, what, need, may=()):
+    if not isinstance(d, dict) or not set(need) <= set(d) or not set(d) <= set(need) | set(may):
+        raise Bad(f"{what} has missing or unknown keys")
 
 
 def _labels(ls):
@@ -27,6 +50,13 @@ def _union(args):
 
 
 def _apply(op, args, p):
+    text, labels = _apply1(op, args, p)
+    if not isinstance(text, str) or len(text) > MAX_TEXT:
+        raise Bad("value text is not a string or is over the size cap")
+    return text, labels
+
+
+def _apply1(op, args, p):
     """args: [(text, labels)]. Returns (text, labels). The labels line of each op is its propagation rule."""
     t = [a[0] for a in args]
     if op == "slice":
@@ -36,7 +66,12 @@ def _apply(op, args, p):
     if op == "concat":
         return "".join(t), _union(args)
     if op == "format":
-        return p[0].format(*t), _union(args)
+        lit = False
+        for text, name, spec, conv in string.Formatter().parse(p[0]):
+            if (name or "").strip("0123456789") or spec or conv:
+                raise Bad("format template allows only plain {} fields")
+            lit = lit or bool(text)
+        return p[0].format(*t), (_union(args) | {TEMPLATE} if lit else _union(args))
     if op == "json_dumps":
         return json.dumps({"v": t[0]}), args[0][1]
     if op == "json_loads":
@@ -45,15 +80,16 @@ def _apply(op, args, p):
 
 
 def _policy(text):
-    try:
-        pol = json.loads(text)
-    except ValueError:
-        raise Bad("policy is not valid JSON")
+    pol = _loads(text, "policy")
     if not isinstance(pol, dict) or not isinstance(pol.get("tools"), dict) or not pol["tools"]:
         raise Bad("policy has no tools")
     for tool, spec in pol["tools"].items():
         if not isinstance(spec, dict) or not isinstance(spec.get("sensitive"), dict) or not isinstance(spec.get("free"), list):
             raise Bad(f"policy for {tool} needs sensitive and free")
+        _keys(spec, f"policy for {tool}", ("sensitive", "free"), ("optional",))
+        opt = spec.get("optional", [])
+        if not isinstance(opt, list) or not all(a in spec["sensitive"] for a in opt):
+            raise Bad(f"policy for {tool} optional must list sensitive args")
         for arg, rule in spec["sensitive"].items():
             if not isinstance(rule, dict) or not isinstance(rule.get("allow"), list) or not isinstance(rule.get("ask"), list):
                 raise Bad(f"policy for {tool}.{arg} needs allow and ask lists")
@@ -62,23 +98,34 @@ def _policy(text):
 
 def _check(plan_text, policy_text):
     pol = _policy(policy_text)
-    try:
-        plan = json.loads(plan_text)
-    except ValueError:
-        raise Bad("plan is not valid JSON")
+    plan = _loads(plan_text, "plan")
+    _keys(plan, "plan", ("values", "calls"))
     if not isinstance(plan, dict) or not isinstance(plan.get("values"), dict) or not isinstance(plan.get("calls"), list):
         raise Bad("plan needs values and calls")
     if not plan["calls"]:
         raise Bad("empty plan")
     vals = {}
+
+    def ref(r):
+        if not isinstance(r, dict):
+            return None
+        _keys(r, "ref", ("ref",))
+        return vals.get(r["ref"]) if isinstance(r["ref"], str) else None
+
     for vid, spec in plan["values"].items():
+        if not isinstance(spec, dict):
+            raise Bad(f"value {vid} is not an object")
         if "op" in spec:
-            refs = [vals.get(a.get("ref")) if isinstance(a, dict) else None for a in spec["args"]]
+            _keys(spec, f"value {vid}", ("op", "args"), ("params",))
+            if not isinstance(spec["args"], list) or not isinstance(spec.get("params", []), list):
+                raise Bad(f"value {vid} args and params must be lists")
+            refs = [ref(a) for a in spec["args"]]
             if not refs or None in refs:
                 raise Bad(f"value {vid} derives from an unknown value")
             vals[vid] = _apply(spec["op"], refs, spec.get("params", []))
         else:
-            if not isinstance(spec["text"], str):
+            _keys(spec, f"value {vid}", ("text",), ("labels",))
+            if not isinstance(spec["text"], str) or len(spec["text"]) > MAX_TEXT:
                 raise Bad(f"value {vid} text is not a string")
             vals[vid] = (spec["text"], _labels(spec.get("labels")))
     found, recorded = [], []
@@ -86,10 +133,10 @@ def _check(plan_text, policy_text):
     def add(sev, i, tool, arg, source, why):
         found.append({"severity": sev, "call": i, "tool": tool, "arg": arg, "source": source, "reason": why})
 
-    def ref(r):
-        return vals.get(r.get("ref")) if isinstance(r, dict) else None
-
     for i, c in enumerate(plan["calls"]):
+        _keys(c, f"call {i}", ("tool", "args"))
+        if not isinstance(c["args"], dict):
+            raise Bad(f"call {i} args is not an object")
         tool = c["tool"]
         if not isinstance(tool, str):
             v = ref(tool)
@@ -111,7 +158,7 @@ def _check(plan_text, policy_text):
                 add("BLOCK", i, tool, arg, None, "unlabeled or unknown value")
             elif arg in spec["sensitive"]:
                 rule = spec["sensitive"][arg]
-                bad = sorted(x for x in v[1] if x not in rule["allow"])
+                bad = sorted((x for x in v[1] if x not in rule["allow"]), key=lambda x: (x == TEMPLATE, x))  # template label is named last
                 hard = [x for x in bad if x not in rule["ask"]]
                 if hard:
                     add("BLOCK", i, tool, arg, hard[0], "source may not reach this argument")
@@ -121,6 +168,9 @@ def _check(plan_text, policy_text):
                 recorded.append({"call": i, "tool": tool, "arg": arg, "labels": sorted(v[1])})
             else:
                 add("BLOCK", i, tool, arg, None, "argument not declared in policy")
+        for arg in spec["sensitive"]:
+            if arg not in c["args"] and arg not in spec.get("optional", []):
+                add("BLOCK", i, tool, arg, None, "sensitive argument missing from the call")
     verdict = max((f["severity"] for f in found), key=RANK.get, default="ALLOW")
     return verdict, found, recorded
 

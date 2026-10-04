@@ -3,12 +3,13 @@ A control copy must pass first. A mutant that hangs past 8 s counts as killed.""
 import pathlib, shutil, subprocess, sys, tempfile
 ROOT = pathlib.Path(__file__).parent
 T = "tests/test_guard.py"
+H = "tests/test_review.py"  # hostile review findings T1-T11
 # (name, file, text to remove, text to put in, test file that must fail)
 MUTANTS = [
     ("slice: drop propagation, result looks owner-typed", "taintflow.py", "return t[0][p[0]:p[1]], args[0][1]", "return t[0][p[0]:p[1]], frozenset({TRUSTED})", T),
     ("upper: drop propagation", "taintflow.py", "return t[0].upper(), args[0][1]", "return t[0].upper(), frozenset({TRUSTED})", T),
     ("concat: keep only the first operand's labels", "taintflow.py", 'return "".join(t), _union(args)', 'return "".join(t), args[0][1]', T),
-    ("format: drop propagation", "taintflow.py", "return p[0].format(*t), _union(args)", "return p[0].format(*t), frozenset({TRUSTED})", T),
+    ("format: drop propagation", "taintflow.py", "return p[0].format(*t), (_union(args) | {TEMPLATE} if lit else _union(args))", "return p[0].format(*t), frozenset({TRUSTED})", T),
     ("json: dumps drops propagation", "taintflow.py", "return json.dumps({\"v\": t[0]}), args[0][1]", "return json.dumps({\"v\": t[0]}), frozenset({TRUSTED})", T),
     ("json: loads drops propagation", "taintflow.py", "return json.loads(t[0])[\"v\"], args[0][1]", "return json.loads(t[0])[\"v\"], frozenset({TRUSTED})", T),
     ("unknown tool: skipped, not blocked", "taintflow.py", 'add("BLOCK", i, tool, None, None, "unknown tool")', "pass", T),
@@ -23,6 +24,14 @@ MUTANTS = [
     ("verdict: ask outranks block", "taintflow.py", '"BLOCK": 2}', '"BLOCK": 0}', T),
     ("record: free-arg labels not recorded", "taintflow.py", 'recorded.append({"call": i, "tool": tool, "arg": arg, "labels": sorted(v[1])})', "pass", T),
     ("cli: an unreadable file exits 0", "taintflow.py", "        return 2\n    verdict", "        return 0\n    verdict", T),
+    ("duplicate JSON key: accepted, last one wins", "taintflow.py", 'raise Bad(f"duplicate key {k!r}")', "pass", H),
+    ("sensitive arg missing from a call: not blocked", "taintflow.py", 'add("BLOCK", i, tool, arg, None, "sensitive argument missing from the call")', "pass", H),
+    ("policy optional list ignored", "taintflow.py", 'arg not in spec.get("optional", [])', "arg not in []", H),
+    ("ref with extra keys: accepted", "taintflow.py", '_keys(r, "ref", ("ref",))', "pass", H),
+    ("call with extra keys: accepted", "taintflow.py", '_keys(c, f"call {i}", ("tool", "args"))', "pass", H),
+    ("derived value with text or labels: accepted", "taintflow.py", '_keys(spec, f"value {vid}", ("op", "args"), ("params",))', "pass", H),
+    ("format template text: counted as owner-typed", "taintflow.py", "lit = lit or bool(text)", "lit = False", H),
+    ("output size cap: removed", "taintflow.py", 'if not isinstance(text, str) or len(text) > MAX_TEXT:', "if False:", H),
 ]
 
 

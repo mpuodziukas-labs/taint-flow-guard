@@ -1,0 +1,78 @@
+# RED run: tests/test_review.py against taintflow.py before the fixes (HEAD 7ec4d22)
+$ python3 -m pytest -q -p no:cacheprovider tests/test_review.py --tb=line
+FFFFF.FFFF.FFF                                                           [100%]
+=================================== FAILURES ===================================
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:25: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:30: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:35: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:40: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:44: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:57: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:62: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:67: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:72: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:84: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:89: AssertionError: assert 'ALLOW' == 'BLOCK'
+E   AssertionError: assert 'ALLOW' == 'BLOCK'
+      
+      - BLOCK
+      + ALLOW
+tests/test_review.py:95: AssertionError: assert 'ALLOW' == 'BLOCK'
+=========================== short test summary info ============================
+FAILED tests/test_review.py::test_T1_duplicate_key_inside_a_ref - AssertionErro...
+FAILED tests/test_review.py::test_T2_duplicate_arg_name - AssertionError: asser...
+FAILED tests/test_review.py::test_T3_duplicate_value_id - AssertionError: asser...
+FAILED tests/test_review.py::test_T4_duplicate_tool_key - AssertionError: asser...
+FAILED tests/test_review.py::test_T5_sensitive_arg_left_out - AssertionError: a...
+FAILED tests/test_review.py::test_T6_extra_key_in_a_ref - AssertionError: asser...
+FAILED tests/test_review.py::test_T7_extra_key_on_a_call - AssertionError: asse...
+FAILED tests/test_review.py::test_T8_op_value_also_carries_text_and_labels - As...
+FAILED tests/test_review.py::test_T9_format_template_text_is_not_owner_typed - ...
+FAILED tests/test_review.py::test_T10_nested_concat_blowup_is_blocked_fast - As...
+FAILED tests/test_review.py::test_T10_format_width_blowup_is_blocked - Assertio...
+FAILED tests/test_review.py::test_T11_duplicate_tool_in_the_policy - AssertionE...
+12 failed, 2 passed in 0.05s
