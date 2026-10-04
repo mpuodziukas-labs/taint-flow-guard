@@ -1,0 +1,50 @@
+{
+ "tools": {
+  "http_get": {
+   "free": [
+    "timeout"
+   ],
+   "sensitive": {
+    "url": {
+     "allow": [
+      "trusted-owner"
+     ],
+     "ask": [
+      "untrusted:internal-kb"
+     ]
+    }
+   }
+  },
+  "read_file": {
+   "free": [
+    "path"
+   ],
+   "sensitive": {}
+  },
+  "send_email": {
+   "free": [
+    "subject",
+    "body"
+   ],
+   "sensitive": {
+    "to": {
+     "allow": [
+      "trusted-owner"
+     ],
+     "ask": []
+    }
+   }
+  },
+  "shell": {
+   "free": [],
+   "sensitive": {
+    "argv": {
+     "allow": [
+      "trusted-owner"
+     ],
+     "ask": []
+    }
+   }
+  }
+ }
+}

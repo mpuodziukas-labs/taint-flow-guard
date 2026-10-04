@@ -1,0 +1,28 @@
+{
+ "values": {
+  "t": {
+   "text": "shell",
+   "labels": [
+    "untrusted:web_page"
+   ]
+  },
+  "x": {
+   "text": "ls",
+   "labels": [
+    "trusted-owner"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": {
+    "ref": "t"
+   },
+   "args": {
+    "argv": {
+     "ref": "x"
+    }
+   }
+  }
+ ]
+}

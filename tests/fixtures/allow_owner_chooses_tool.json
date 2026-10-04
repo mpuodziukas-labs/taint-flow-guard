@@ -1,0 +1,28 @@
+{
+ "values": {
+  "t": {
+   "text": "read_file",
+   "labels": [
+    "trusted-owner"
+   ]
+  },
+  "p": {
+   "text": "notes.txt",
+   "labels": [
+    "trusted-owner"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": {
+    "ref": "t"
+   },
+   "args": {
+    "path": {
+     "ref": "p"
+    }
+   }
+  }
+ ]
+}

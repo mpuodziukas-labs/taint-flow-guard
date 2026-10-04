@@ -1,0 +1,34 @@
+{
+ "values": {
+  "to": {
+   "text": "dana@owner.example",
+   "labels": [
+    "trusted-owner"
+   ]
+  },
+  "page": {
+   "text": "archive@attacker.example",
+   "labels": [
+    "untrusted:web_page"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": "send_email",
+   "args": {
+    "to": {
+     "ref": "to"
+    }
+   }
+  },
+  {
+   "tool": "send_email",
+   "args": {
+    "to": {
+     "ref": "page"
+    }
+   }
+  }
+ ]
+}

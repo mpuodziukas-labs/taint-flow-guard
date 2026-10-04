@@ -1,0 +1,20 @@
+{
+ "values": {
+  "u": {
+   "text": "https://kb.owner.example/a",
+   "labels": [
+    "untrusted:internal-kb"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": "http_get",
+   "args": {
+    "url": {
+     "ref": "u"
+    }
+   }
+  }
+ ]
+}

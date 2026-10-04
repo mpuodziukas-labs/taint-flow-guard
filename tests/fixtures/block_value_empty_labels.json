@@ -1,0 +1,18 @@
+{
+ "values": {
+  "to": {
+   "text": "dana@owner.example",
+   "labels": []
+  }
+ },
+ "calls": [
+  {
+   "tool": "send_email",
+   "args": {
+    "to": {
+     "ref": "to"
+    }
+   }
+  }
+ ]
+}

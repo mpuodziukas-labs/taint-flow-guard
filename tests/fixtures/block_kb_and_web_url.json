@@ -1,0 +1,38 @@
+{
+ "values": {
+  "k": {
+   "text": "https://kb.owner.example/a",
+   "labels": [
+    "untrusted:internal-kb"
+   ]
+  },
+  "w": {
+   "text": "?q=1",
+   "labels": [
+    "untrusted:web_page"
+   ]
+  },
+  "u": {
+   "op": "concat",
+   "args": [
+    {
+     "ref": "k"
+    },
+    {
+     "ref": "w"
+    }
+   ],
+   "params": []
+  }
+ },
+ "calls": [
+  {
+   "tool": "http_get",
+   "args": {
+    "url": {
+     "ref": "u"
+    }
+   }
+  }
+ ]
+}

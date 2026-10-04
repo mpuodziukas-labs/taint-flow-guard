@@ -1,0 +1,20 @@
+{
+ "values": {
+  "x": {
+   "text": "1",
+   "labels": [
+    "trusted-owner"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": "wire_money",
+   "args": {
+    "amount": {
+     "ref": "x"
+    }
+   }
+  }
+ ]
+}

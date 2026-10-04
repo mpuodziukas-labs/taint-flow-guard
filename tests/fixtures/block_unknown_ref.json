@@ -1,0 +1,20 @@
+{
+ "values": {
+  "x": {
+   "text": "1",
+   "labels": [
+    "trusted-owner"
+   ]
+  }
+ },
+ "calls": [
+  {
+   "tool": "send_email",
+   "args": {
+    "to": {
+     "ref": "nope"
+    }
+   }
+  }
+ ]
+}
