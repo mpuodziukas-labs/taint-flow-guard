@@ -1,8 +1,8 @@
 # taint-flow-guard
 
-A web page, email or file tells an agent to send data to an attacker, and a pattern scanner misses it when the wording is paraphrased or in another language.
-
 Proves: a plan whose tool choice or sensitive argument derives from untrusted data is BLOCKED, and the verdict is the same for every wording of the injection. Verify in 60s: `bash run.sh`
+
+A web page, email or file tells an agent to send data to an attacker, and a pattern scanner misses it when the wording is paraphrased or in another language.
 
 ## The problem
 
