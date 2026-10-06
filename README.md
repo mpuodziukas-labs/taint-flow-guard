@@ -59,7 +59,7 @@ The second table is the point. The five attack texts say the same thing in five 
 `python3 mutants.py` printed:
 
 ```
-control 2/2 test files pass unmodified
+control 3/3 test files pass unmodified
 RED  slice: drop propagation, result looks owner-typed
 RED  upper: drop propagation
 RED  concat: keep only the first operand's labels
@@ -85,13 +85,15 @@ RED  ref with extra keys: accepted
 RED  call with extra keys: accepted
 RED  derived value with text or labels: accepted
 RED  format template text: counted as owner-typed
+RED  cli: tool, arg and label printed raw
+RED  cli: error reason printed raw
 RED  output size cap: removed
-mutants killed 26/26
+mutants killed 28/28
 ```
 
 ## Plan and policy format
 
-A plan has `values` and `calls`. A value is either `{"text", "labels"}` or a derivation `{"op", "args": [{"ref"}], "params"}` with ops slice, upper, concat, format, json_dumps and json_loads. A call is `{"tool", "args": {name: {"ref"}}}`; the tool may itself be a ref. Values are defined in order. The schema is strict: a duplicate key anywhere, or a key not listed here (in a plan, ref, call, value or the policy), is BLOCK. A value text over 65536 characters is BLOCK. A format template may hold only plain `{}` fields; literal text in it is labeled `untrusted:format_template`, so it cannot reach a sensitive argument. A call that leaves out a sensitive argument of its tool is BLOCK, unless the policy lists that argument under the tool's `optional`. The policy per tool lists `sensitive` args with `allow` and `ask` label lists, and `free` args. Every label of a value must be in `allow` or the call is BLOCK; a label only in `ask` makes ASK_OWNER; BLOCK outranks ASK_OWNER outranks ALLOW. Labels of values in free arguments are recorded in the result.
+A plan has `values` and `calls`. A value is either `{"text", "labels"}` or a derivation `{"op", "args": [{"ref"}], "params"}` with ops slice, upper, concat, format, json_dumps and json_loads. A call is `{"tool", "args": {name: {"ref"}}}`; the tool may itself be a ref. Values are defined in order. The schema is strict: a duplicate key anywhere, or a key not listed here (in a plan, ref, call, value or the policy), is BLOCK. A value text over 65536 characters is BLOCK. A format template may hold only plain `{}` fields; literal text in it is labeled `untrusted:format_template`, so it cannot reach a sensitive argument. A call that leaves out a sensitive argument of its tool is BLOCK, unless the policy lists that argument under the tool's `optional`. The policy per tool lists `sensitive` args with `allow` and `ask` label lists, and `free` args. Every label of a value must be in `allow` or the call is BLOCK; a label only in `ask` makes ASK_OWNER; BLOCK outranks ASK_OWNER outranks ALLOW. Labels of values in free arguments are recorded in the result. The CLI prints one line; a tool, argument or label name that is not 1 to 64 characters of `A-Za-z0-9_.:-` is printed as a JSON string, so a crafted name cannot add a line, fake a verdict or carry a terminal escape.
 
 ## What each planted case proves
 
@@ -111,7 +113,7 @@ Each defense is removed in a scratch copy and the tests must go RED. An unmodifi
 
 ## Hostile review
 
-A second reviewer reviewed the guard on 2026-10-04 and found 11 breaks, T1 to T11. All 11 are now tests in tests/test_review.py, each using the call from the review. Before the fixes, 12 of those tests failed; the output is in [RED-RUN-REVIEW.txt](RED-RUN-REVIEW.txt). Each new rule also has a mutant that turns the tests RED when the rule is removed.
+An outside reviewer reviewed the guard on 2026-10-04 and found 11 breaks, T1 to T11. All 11 are now tests in tests/test_review.py, each using the call from the review. Before the fixes, 12 of those tests failed; the output is in [RED-RUN-REVIEW.txt](RED-RUN-REVIEW.txt). Each new rule also has a mutant that turns the tests RED when the rule is removed.
 
 - T1 to T4, T11: a duplicate key in a ref, an arg list, the value list, a call or the policy made the checker see one value and another JSON parser see a different one. Now a duplicate key is BLOCK.
 - T5: a call that left out a sensitive argument was allowed. Now it is BLOCK unless the policy marks the argument optional.

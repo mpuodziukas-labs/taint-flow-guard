@@ -4,6 +4,7 @@ import pathlib, shutil, subprocess, sys, tempfile
 ROOT = pathlib.Path(__file__).parent
 T = "tests/test_guard.py"
 H = "tests/test_review.py"  # hostile review findings T1-T11
+C = "tests/test_cli.py"  # CLI output escaping
 # (name, file, text to remove, text to put in, test file that must fail)
 MUTANTS = [
     ("slice: drop propagation, result looks owner-typed", "taintflow.py", "return t[0][p[0]:p[1]], args[0][1]", "return t[0][p[0]:p[1]], frozenset({TRUSTED})", T),
@@ -31,6 +32,8 @@ MUTANTS = [
     ("call with extra keys: accepted", "taintflow.py", '_keys(c, f"call {i}", ("tool", "args"))', "pass", H),
     ("derived value with text or labels: accepted", "taintflow.py", '_keys(spec, f"value {vid}", ("op", "args"), ("params",))', "pass", H),
     ("format template text: counted as owner-typed", "taintflow.py", "lit = lit or bool(text)", "lit = False", H),
+    ("cli: tool, arg and label printed raw", "taintflow.py", "return x if x is None or SAFE.fullmatch(x) else json.dumps(x)", "return x", C),
+    ("cli: error reason printed raw", "taintflow.py", 'return r if re.fullmatch(r"[ -~]*", r) and " | " not in r else json.dumps(r)', "return r", C),
     ("output size cap: removed", "taintflow.py", 'if not isinstance(text, str) or len(text) > MAX_TEXT:', "if False:", H),
 ]
 
