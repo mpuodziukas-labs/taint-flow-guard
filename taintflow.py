@@ -3,11 +3,12 @@ Values carry labels: "trusted-owner" or "untrusted:<source>". Labels propagate t
 Plan: {"values": {id: {"text", "labels"} | {"op", "args": [{"ref"}], "params"}}, "calls": [{"tool", "args": {name: {"ref"}}}]}.
 Policy: {"tools": {tool: {"sensitive": {arg: {"allow": [label], "ask": [label]}}, "free": [arg]}}}.
 Verdict ALLOW, ASK_OWNER or BLOCK. Fail closed: any doubt, any error is BLOCK."""
-import json, string, sys
+import json, re, string, sys
 
 TRUSTED = "trusted-owner"
 MAX_TEXT = 65536  # longest value text, in characters; a longer one is BLOCK
 TEMPLATE = "untrusted:format_template"  # literal text in a format template is not owner-typed
+SAFE = re.compile(r"[A-Za-z0-9_.:-]{1,64}")
 RANK = {"ALLOW": 0, "ASK_OWNER": 1, "BLOCK": 2}
 
 
@@ -184,6 +185,15 @@ def check(plan_text, policy_text):
                           "reason": f"fail closed: {type(e).__name__}: {e}"}], []
 
 
+def _show(x):
+    """Print an attacker-controllable field: plain if it is a safe token, else as a JSON string (one line, ASCII)."""
+    return x if x is None or SAFE.fullmatch(x) else json.dumps(x)
+
+
+def _show_reason(r):
+    return r if re.fullmatch(r"[ -~]*", r) and " | " not in r else json.dumps(r)
+
+
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     if len(argv) != 2:
@@ -195,7 +205,7 @@ def main(argv=None):
         print(f"cannot read input: {type(e).__name__}")
         return 2
     verdict, found, _ = check(texts[1], texts[0])
-    print(verdict + "".join(f" | call {f['call']} {f['tool']}.{f['arg']} from {f['source']}: {f['reason']}" for f in found))
+    print(verdict + "".join(f" | call {f['call']} {_show(f['tool'])}.{_show(f['arg'])} from {_show(f['source'])}: {_show_reason(f['reason'])}" for f in found))
     return {"ALLOW": 0, "BLOCK": 1, "ASK_OWNER": 3}[verdict]
 
 
