@@ -3,10 +3,10 @@ $ python3 -m pytest -q tests/test_guard.py --tb=short
 
 ==================================== ERRORS ====================================
 _____________________ ERROR collecting tests/test_guard.py _____________________
-ImportError while importing test module '~/proof-artifacts/taint-flow-guard/tests/test_guard.py'.
+ImportError while importing test module './tests/test_guard.py'.
 Hint: make sure your test modules/packages have valid Python names.
 Traceback:
-/opt/homebrew/Cellar/python@3.11/3.11.15/Frameworks/Python.framework/Versions/3.11/lib/python3.11/importlib/__init__.py:126: in import_module
+python3/importlib/__init__.py:126: in import_module
     return _bootstrap._gcd_import(name[level:], package, level)
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 tests/test_guard.py:3: in <module>
@@ -25,10 +25,10 @@ E   AssertionError: README flow-guard table drifted from evaluate.py
     assert '| class | verdict and named finding as labeled |\n|---|---|\n| injected address, wording varies | 5/5 |\n| owner-type... untrusted shell argv | 1/1 |\n| unlabeled or unknown | 8/8 |\n| owner approval | 3/3 |\n| second call blocked | 1/1 |' in '# taint-flow-guard\n\nA web page, email or f
      +  where '| class | verdict and named finding as labeled |\n|---|---|\n| injected address, wording varies | 5/5 |\n| owner-type... untrusted shell argv | 1/1 |\n| unlabeled or unknown | 8/8 |\n| owner approval | 3/3 |\n| second call blocked | 1/1 |' = <function results at 0x106b1f100>()
      +    where <function results at 0x106b1f100> = evaluate.results
-~/proof-artifacts/taint-flow-guard/tests/test_proof.py:14: AssertionError: README flow-guard table drifted from evaluate.py
+./tests/test_proof.py:14: AssertionError: README flow-guard table drifted from evaluate.py
 E   AssertionError: README misses mutant: slice: drop propagation, result looks owner-typed
     assert 'RED  slice: drop propagation, result looks owner-typed' in '# taint-flow-guard\n\nA web page, email or file tells an agent to send data to an attacker, and a pattern scanner mis...uate.py`, `python -m pytest -q` and `python mutants.py` on push and pull request.\n\n## License\n\nMIT, see 
-~/proof-artifacts/taint-flow-guard/tests/test_proof.py:26: AssertionError: README misses mutant: slice: drop propagation, result looks owner-typed
+./tests/test_proof.py:26: AssertionError: README misses mutant: slice: drop propagation, result looks owner-typed
 =========================== short test summary info ============================
 FAILED tests/test_proof.py::test_readme_tables_match_evaluate_output - Assert...
 FAILED tests/test_proof.py::test_readme_lists_every_mutant_and_the_count - As...

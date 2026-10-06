@@ -1,4 +1,4 @@
-"""Hostile-review findings T1-T11 (review, 2026-10-04), each with the exact call from the findings file."""
+"""Hostile-review findings T1-T11 (outside review, 2026-10-04), each with the exact call from the findings file."""
 import json
 import pytest
 from taintflow import check
