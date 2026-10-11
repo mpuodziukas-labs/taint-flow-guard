@@ -1,0 +1,11 @@
+{
+  "expected_exit": 0,
+  "expected_line": "mutants killed 28/28",
+  "limitations": "Needs a trusted planner that separates control from data. Untrusted data steering a non-sensitive argument is allowed and only recorded. Label sources must be honest. Granularity is the whole argument. It checks a plan before it runs and does not watch tool behavior.",
+  "outcome": "a plan check that blocks tool calls whose tool choice or sensitive argument derives from untrusted data, whatever the wording of the injection",
+  "repo": "taint-flow-guard",
+  "schema": "proof-pack/1",
+  "scope": "synthetic data, fixed seed, offline",
+  "site": "https://puodziukas.dev/proof.json",
+  "verify_cmd": "bash run.sh"
+}
