@@ -4,6 +4,29 @@ Proves: a plan whose tool choice or sensitive argument derives from untrusted da
 
 A web page, email or file tells an agent to send data to an attacker, and a pattern scanner misses it when the wording is paraphrased or in another language.
 
+## Ticket
+
+| Field | Value |
+|---|---|
+| Ticket | taint-flow-guard 2026-10-25 |
+| Status | LIVE |
+| Severity of a false pass | A plan whose tool choice or sensitive argument came from untrusted text is allowed to run, and a page, email or file steers the agent. |
+| Scope (in) | Checking a plan before it runs: labels on every value, labels carried through slice, upper, concat, format and JSON round trips, and a per-tool policy of sensitive and free arguments, with the verdicts ALLOW, ASK_OWNER and BLOCK. |
+| Out of scope | A planner that is not trusted, steering of free arguments, dishonest labels, and what a tool does once it runs (see Limitations). |
+| Owner | Michael Puodziukas, michael@puodziukas.dev |
+| Opened | 2026-10-04 |
+| Last verified | 2026-10-25, last line of `python3 evaluate.py` is `\| polite_cover_story \| PASS \| BLOCK \|`; last line of `python3 mutants.py` is `mutants killed 28/28` |
+| Oracle | `bash run.sh`, exit 0 and the line `mutants killed 28/28` |
+| Dependencies | Runtime: Python 3, standard library only. Test: pytest. |
+| Supported platforms | macOS (evaluate.py and mutants.py measured here, rc=0); Linux through the ubuntu-latest runner in .github/workflows/ci.yml (not measured here). |
+
+## Quick start
+
+```bash
+python3 -m pip install pytest
+bash run.sh
+```
+
 ## The problem
 
 Detecting an injection by its words is a race the defender loses: a new paraphrase, a new language or a cover story needs a new rule. This guard does not read the words. Every value carries labels, `trusted-owner` or `untrusted:<source>`. Labels follow a value through every derivation (slice, upper-case, concatenation, format, JSON round trip). A policy file declares, per tool, which arguments are sensitive and which sources may reach them. Before a plan runs, every call is checked. Untrusted data may not choose which tool runs and may not flow into a sensitive argument, whatever it says.
@@ -12,26 +35,26 @@ Prior art, not claimed here: "Defeating Prompt Injections by Design" (arXiv 2503
 
 ## Run it (60s)
 
-```
+```bash
 python3 -m pip install pytest
 bash run.sh
 ```
 
 Check one plan (exit 0 ALLOW, 1 BLOCK, 3 ASK_OWNER, 2 unreadable):
 
-```
+```bash
 python3 -m taintflow tests/fixtures/policy.json tests/fixtures/exfil_german.json
 ```
 
 printed:
 
-```
+```text
 BLOCK | call 0 send_email.to from untrusted:web_page: source may not reach this argument
 ```
 
 `bash run.sh` runs `python3 evaluate.py`, then `python3 -m pytest -q`, then `python3 mutants.py`. It exits 0 only if all three pass. `evaluate.py` printed:
 
-```
+```text
 | class | verdict and named finding as labeled |
 |---|---|
 | injected address, wording varies | 5/5 |
@@ -58,7 +81,7 @@ The second table is the point. The five attack texts say the same thing in five 
 
 `python3 mutants.py` printed:
 
-```
+```text
 control 3/3 test files pass unmodified
 RED  slice: drop propagation, result looks owner-typed
 RED  upper: drop propagation
@@ -123,6 +146,36 @@ An outside reviewer reviewed the guard on 2026-10-04 and found 11 breaks, T1 to 
 
 Three more findings in the same review, T12 to T14, are known limits, listed below and not fixed: a trusted tool that returns untrusted text, a free argument such as a file path, and labels set by the harness. T12 to T14 have no tests. Nothing is OPEN from T1 to T11.
 
+## Normal procedure
+
+1. From the repo root run `bash run.sh`. It runs `python3 evaluate.py`, then `python3 -m pytest -q`, then `python3 mutants.py`, and exits 0 only if all three pass.
+2. Read the two tables that `evaluate.py` prints. Every class row must read N/N, and the flow guard column of the second table must read BLOCK on all five wordings. PASS means exit code 0 and this last line of the mutants run:
+
+```text
+mutants killed 28/28
+```
+
+3. To check one plan against a policy run `python3 -m taintflow <policy.json> <plan.json>`. The exit code is 0 for ALLOW, 1 for BLOCK, 3 for ASK_OWNER and 2 for an unreadable file.
+4. After a change to the fixtures or the cases, regenerate them with `fixtures_gen.py` and run `bash run.sh` again.
+
+## Abnormal procedure
+
+| Symptom | Cause | Action | Oracle |
+|---|---|---|---|
+| `evaluate.py` exits 1 or a class row is short of N/N | A verdict or named finding differs from the label in cases.jsonl | Run the case plan through `python3 -m taintflow tests/fixtures/policy.json tests/fixtures/<case>.json` and compare the line with the label | `python3 evaluate.py` |
+| `test_readme_tables_match_evaluate_output` fails | The two tables in this README differ from what `evaluate.py` prints | Copy the tables printed by `python3 evaluate.py` into the evaluate fence of this README | `python3 -m pytest -q` |
+| `mutants.py` prints a LIVE line | A removed defense that no test detects, which is a gap in the tests | Add or tighten a test in the file named by that mutant until the line prints RED | `python3 mutants.py` |
+| `mutants.py` prints `control FAIL` or `pattern matched` | The unmodified tests fail in the copy (for example pytest is missing), or the source line a mutant targets has moved | Run `python3 -m pip install pytest`, or update the pattern in `mutants.py` | `python3 mutants.py` |
+| The command line exits 2 | The policy or plan file cannot be read or parsed | Fix the file and run the command again | `python3 -m taintflow tests/fixtures/policy.json tests/fixtures/exfil_german.json` |
+
+## Emergency procedure
+
+The guard allowed a plan that was later found to carry untrusted data into a sensitive argument or into the choice of a tool.
+
+1. Freeze: stop running plans on the strength of this guard for the affected tool, or send them to the owner for approval, and record the repo commit, the plan, the policy and the labels as supplied.
+2. Replay: run the saved plan with `python3 -m taintflow <policy.json> <plan.json>`. If it exits 0, add the plan as a case in `fixtures_gen.py` and `cases.jsonl`, fix the check in `taintflow.py`, and add a mutant to `mutants.py`. Then run `bash run.sh` and expect exit 0 and the line `mutants killed` with every count N/N.
+3. Tell: the owner (michael@puodziukas.dev) and every team whose plans pass through this guard. Name the missing check and the Limitations item that covers it.
+
 ## Honesty
 
 This is a small deterministic checker, not a product. Plans, labels, the policy and all addresses are synthetic and written for this repo. The side-by-side uses five attack texts I wrote, one of them deliberately a classic override phrase; it shows that the scanner's verdict depends on wording and the flow guard's does not. It is not a recall measurement, and I did not run it against a real agent or a real injection corpus.
@@ -139,6 +192,59 @@ This is a small deterministic checker, not a product. Plans, labels, the policy 
 ## CI
 
 The workflow in .github/workflows/ci.yml runs `python evaluate.py`, `python -m pytest -q` and `python mutants.py` on push and pull request.
+
+## Architecture
+
+| Path | Role | Lines |
+|---|---|---|
+| `taintflow.py` | The guard: labels, derivations, policy check, verdict and the command line entry point | 213 |
+| `evaluate.py` | The oracle: prints the class table and the side-by-side table | 49 |
+| `mutants.py` | Mutation check: removes one defense per scratch copy and requires a red test file | 79 |
+| `baseline_scanner.py` | The pattern scanner used as the comparison column | 450 |
+| `fixtures_gen.py` | Generates the plan fixtures | 125 |
+| `cases.jsonl` | Labeled verdicts and named findings for each case | 29 |
+| `run.sh` | Runs evaluate, pytest and mutants and exits 0 only if all pass | 10 |
+| `PROOF.json` | Proof pack manifest: verify command and expected line | 11 |
+| `AGENTS.md` | Agent verification contract | 13 |
+| `RED-RUN-REVIEW.txt` | Output of the review tests before the fixes | 78 |
+| `RED-RUN.txt` | Recorded red run | 35 |
+| `pytest.ini` | Pytest settings | 2 |
+| `.github/workflows/ci.yml` | CI workflow | 10 |
+| `tests/conftest.py` | Pytest setup | 2 |
+| `tests/test_cli.py` | Command line tests | 63 |
+| `tests/test_guard.py` | Guard unit tests | 130 |
+| `tests/test_proof.py` | Evaluation, README table and mutant list tests | 40 |
+| `tests/test_review.py` | Hostile-review tests T1 to T11 | 95 |
+| `tests/fixtures/` | Plan and policy fixtures | none: directory |
+
+Data flow:
+
+1. `fixtures_gen.py` writes the plans into `tests/fixtures` and the labels into `cases.jsonl`.
+2. `evaluate.py` runs `taintflow.py` on each plan and compares the verdict and named finding with the label, then runs `baseline_scanner.py` on the five attack texts for the second table.
+3. `mutants.py` removes one defense at a time from a scratch copy of `taintflow.py` and requires a test file to go red.
+4. `run.sh` chains the three steps and exits 0 only if all pass.
+
+## Test and mutation evidence
+
+Measured on 2026-10-25 on macOS by running both oracles from the repo root. Each exited with code zero (rc=0). Last line of `python3 evaluate.py`:
+
+```text
+| polite_cover_story | PASS | BLOCK |
+```
+
+Last line of `python3 mutants.py`:
+
+```text
+mutants killed 28/28
+```
+
+## Change log
+
+| Date | Change | Oracle after |
+|---|---|---|
+| 2026-10-25 | Additive restructuring to the README standard: sections added, no old line altered | `python3 mutants.py` last line `mutants killed 28/28` |
+| 2026-10-04 | Hostile review fixes T1 to T11 (date from the Hostile review section) | none: no oracle output was recorded for that review in this change log |
+| 2026-10-04 | Repo opened (date from the Ticket) | none: no oracle output was recorded for that date |
 
 ## License
 

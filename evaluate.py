@@ -43,6 +43,9 @@ def side_by_side():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        print("evaluate: unexpected argument: " + sys.argv[1], file=sys.stderr)
+        sys.exit(2)
     print(results())
     print()
     print(side_by_side())
