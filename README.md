@@ -2,6 +2,8 @@
 
 Proves: a plan whose tool choice or sensitive argument derives from untrusted data is BLOCKED, and the verdict is the same for every wording of the injection. Verify in 60s: `bash run.sh`
 
+Where this fits: OWASP LLM Top 10 2025 LLM01 Prompt Injection and LLM06 Excessive Agency; NIST AI RMF function MANAGE. Sources in SOURCES.md.
+
 A web page, email or file tells an agent to send data to an attacker, and a pattern scanner misses it when the wording is paraphrased or in another language.
 
 ## Ticket
